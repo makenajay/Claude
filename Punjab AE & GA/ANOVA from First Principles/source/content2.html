@@ -1,0 +1,82 @@
+<!-- ============================================================ PART II -->
+<div class="banner p2"><div class="kicker">Part II</div><div class="title">Applications</div>
+<ul><li>12 toy datasets</li><li>effect sizes</li><li>Tukey</li><li>Welch</li><li>regression</li><li>interactions</li></ul></div>
+
+<section class="chap p2">
+<h2><span class="num">6</span>Twelve one-way applications, and what comes after F</h2>
+<p>Ten classic toy examples from agriculture, education, industry, marketing, health and energy, plus <span class="badge bnew">NEW</span> two reality checks (highlighted). Each dataset has 3–4 groups of five observations. Look at the pictures before the numbers.</p>
+[[fig('f_gallery','<b>Figure 5. All twelve datasets at a glance.</b> Dots are observations; short bars are group means; the grey line is the grand mean; η² is shown top-left. In examples 1–10 the groups barely overlap, which is why every one of them is "significant". The two pink-axis panels are the new reality checks: <em>battery life</em> (the means are practically on top of each other) and <em>delivery time</em> (one courier is wildly more variable than the others).')]]
+[[results_table()]]
+[[fig('f_budget','<b>Figure 6. The "SS budget" of each example.</b> Each bar is 100% of the total sum of squares, split into the share explained by the grouping (orange = η²) and the share left within groups (blue). Sorted from least to most explained.')]]
+<p class="small muted">The raw data for all twelve examples are listed in the table on the next page, so that every row above can be reproduced by hand or with <code>aov()</code>.</p>
+[[data_table()]]
+
+<h3><span class="n">6.1</span>Reading the summary table</h3>
+<p>"Total var" is SST/(n − 1), the variance you would compute ignoring groups. MS<sub>within</sub> is what remains after each group gets its own mean. The ratio between them is a quick sense-check. For the call-centre data the total variance of 0.48 shrinks to 0.03 once training type is known; for the batteries it barely changes ([[O['batt']['totvar']|.2f]] → [[O['batt']['msw']|.2f]]).</p>
+
+<h3><span class="n">6.2</span>How big is the effect? η² and ω²</h3>
+<div class="grid2" style="align-items:center">
+<div class="eqbox" style="margin:0">$$\eta^2=\frac{\SSB}{\SST}\qquad \omega^2=\frac{\SSB-(k-1)\,\MSW}{\SST+\MSW}$$</div>
+<p class="small" style="margin:0">η² is the share of the sample's SST associated with the grouping. It is <em>biased upward</em>: even pure noise produces some SSB. ω² subtracts the SSB we would expect from noise alone, so it estimates the population share more honestly. For fertilizer: η² = [[O['fert']['eta']|.3f]] but ω² = [[O['fert']['omega']|.3f]]. With only five observations per group the gap matters. For batteries η² = [[O['batt']['eta']|.3f]] while ω² is negative (reported as 0).</p>
+</div>
+
+<h3><span class="n">6.3</span>Which groups differ? Post-hoc comparisons</h3>
+<p>A significant omnibus F says <em>at least one</em> mean differs. To find which, compare pairs while controlling the chance of any false alarm across all comparisons. Tukey's Honest Significant Difference (HSD) is the standard choice for all pairwise comparisons.</p>
+[[fig('f_tukey','<b>Figure 7. Tukey 95% family-wise intervals for the fertilizer data.</b> B beats both A and C by about 4–5 q/acre (orange intervals exclude zero). A and C cannot be told apart (grey interval straddles zero). This is the practical conclusion the F test alone could not give.')]]
+
+<h3><span class="n">6.4</span><span class="badge bnew">NEW</span> Example 11: a null result (battery life)</h3>
+<p>Three brands, five batteries each: means [[O['batt']['means'][0]|.2f]], [[O['batt']['means'][1]|.2f]] and [[O['batt']['means'][2]|.2f]] hours. F = [[O['batt']['F']|.2f]], p = [[O['batt']['p']|.2f]]. F is below 1, which is exactly what equal means would typically produce.</p>
+[[anova_table('batt','brands')]]
+[[call('warn','Absence of evidence ≠ evidence of absence','alert')]]
+<p>It is tempting to write "the brands are identical". But with n = 5 per brand, a 95% interval for any pairwise difference is roughly ±[[2.179*(2*O['batt']['msw']/5)**0.5|.2f]] hours wide. The honest statement is: <em>"We found no evidence of a difference; the data are consistent with differences of up to about [[2.179*(2*O['batt']['msw']/5)**0.5|.1f]] hours either way."</em> Report the interval, not just the p-value.</p></div>
+
+<h3><span class="n">6.5</span><span class="badge bnew">NEW</span> Example 12: unequal spreads (courier delivery time)</h3>
+<p>The Fast and Local couriers are extremely consistent (variances [[O['courier']['vars'][0]|.1f]] and [[O['courier']['vars'][2]|.1f]]), while Budget is erratic (variance [[O['courier']['vars'][1]|.1f]]). Classical ANOVA pools all three variances into one MS<sub>within</sub> = [[O['courier']['msw']|.1f]], which is dominated by Budget. That inflated "noise" swamps the clear 5-hour gap between Fast ([[O['courier']['means'][0]|.1f]] h) and Local ([[O['courier']['means'][2]|.1f]] h).</p>
+<div class="grid2">
+ <div class="tile" style="--w:var(--noi-wash);--ci:var(--noi-ink)"><div class="v">F = [[O['courier']['F']|.2f]], p = [[O['courier']['p']|.2f]]</div><div class="l">Classical one-way ANOVA (assumes equal variances): "no difference"</div></div>
+ <div class="tile" style="--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="v">F = [[O['courier']['welchF']|.1f]], p = [[O['courier']['welchp']|.4f]]</div><div class="l">Welch's ANOVA (df = 2, [[O['courier']['welchdf']|.1f]]), which weights each group by n<sub>i</sub>/s<sub>i</sub>²: "clear difference"</div></div>
+</div>
+<p>When group variances differ a lot, and especially when group sizes are unequal too, use <b>Welch's ANOVA</b> (<code>oneway.test()</code> in R). Many statisticians now use it by default: when the variances really are equal, it loses almost nothing.</p>
+
+<h3><span class="n">6.6</span>Checking the model: residual diagnostics</h3>
+[[fig('f_diag','<b>Figure 8. Diagnostics for the fertilizer model.</b> Left: residuals vs fitted values should form an even horizontal band around zero, with no funnel (unequal variance) and no curve. Right: in a normal Q–Q plot the points should hug the line. Both look fine here. With 15 points, do not over-read small wiggles.')]]
+</section>
+
+<section class="chap p2">
+<h2><span class="num">7</span>ANOVA inside regression: farm yield</h2>
+<p>Model: <em>yield per acre ~ farm size + fertilizer</em>. Both predictors are continuous, so this is multiple linear regression. But OLS regression has the same decomposition: $\SST=\text{SSR}+\text{SSE}$ (model + residual). The overall regression F test <em>is</em> an ANOVA F test comparing the model with an intercept-only model.</p>
+<table class="tight small"><tr><th>Farm size (acres)</th>[[''.join(f"<td class='r'>{d[0]:g}</td>" for d in reg['data'])]]</tr>
+<tr><th>Fertilizer (kg)</th>[[''.join(f"<td class='r'>{d[1]:g}</td>" for d in reg['data'])]]</tr>
+<tr><th>Yield (q/acre)</th>[[''.join(f"<td class='r'>{d[2]:.2f}</td>" for d in reg['data'])]]</tr></table>
+<div class="eqbox">$$\widehat{\text{yield}}=[[reg['b'][0]|.3f]]+[[reg['b'][1]|.3f]]\,(\text{farm size})+[[reg['b'][2]|.4f]]\,(\text{fertilizer})$$</div>
+<div class="grid2" style="align-items:start">
+<div><table class="tight"><tr><th>Source</th><th class="r">SS</th><th class="r">df</th><th class="r">MS</th><th class="r">F</th></tr>
+<tr><td><span class="sw" style="background:var(--sig)"></span>Model</td><td class="r">[[reg['ssr']|.2f]]</td><td class="r">2</td><td class="r">[[reg['ssr']/2|.2f]]</td><td class="r">[[reg['F']|.2f]]</td></tr>
+<tr><td><span class="sw" style="background:var(--noi)"></span>Residual</td><td class="r">[[reg['sse']|.2f]]</td><td class="r">9</td><td class="r">[[reg['mse']|.3f]]</td><td></td></tr>
+<tr class="tot"><td><span class="sw" style="background:var(--tot)"></span>Total</td><td class="r">[[reg['sst']|.2f]]</td><td class="r">11</td><td></td><td></td></tr></table>
+<p class="small">R² = SSR/SST = [[reg['r2']|.3f]] (adjusted [[reg['adjr2']|.3f]]); overall p = [[reg['Fp']|.1e]].</p></div>
+<div><table class="tight"><tr><th>Coefficient</th><th class="r">Estimate</th><th class="r">SE</th><th class="r">t</th><th class="r">p</th></tr>
+<tr><td>Intercept</td><td class="r">[[reg['b'][0]|.3f]]</td><td class="r">[[reg['se'][0]|.3f]]</td><td class="r">[[reg['t'][0]|.2f]]</td><td class="r">[[pf(reg['p'][0])]]</td></tr>
+<tr class="hl"><td>Farm size</td><td class="r">[[reg['b'][1]|.3f]]</td><td class="r">[[reg['se'][1]|.3f]]</td><td class="r">[[reg['t'][1]|.2f]]</td><td class="r">[[reg['p'][1]|.2f]]</td></tr>
+<tr class="hl"><td>Fertilizer</td><td class="r">[[reg['b'][2]|.4f]]</td><td class="r">[[reg['se'][2]|.4f]]</td><td class="r">[[reg['t'][2]|.2f]]</td><td class="r">[[reg['p'][2]|.2f]]</td></tr></table></div>
+</div>
+[[fig('f_reg','<b>Figure 9. A puzzle, explained.</b> Left: in these data, bigger farms almost always use more fertilizer (r = [[reg["r"]|.3f]]). Right: the fitted model predicts yield extremely well. The model as a whole is decisive, but it cannot tell <em>which</em> of two near-identical predictors deserves the credit.')]]
+[[call('warn','The collinearity trap (corrected in this edition)','alert')]]
+<p>The overall F is huge (p ≈ 4 × 10⁻⁷), yet <em>neither</em> slope is individually significant (p ≈ 0.51 each). Alone, each predictor is highly significant (R² ≈ 0.96, p ≈ 2.5 × 10⁻⁸). The reason is <b>collinearity</b>: the variance inflation factor is VIF = 1/(1 − r²) ≈ [[reg['vif']|.0f]], so each slope's variance is inflated about [[reg['vif']|.0f]]-fold. The coefficients "0.119 per acre" and "0.054 per kg" are not interpretable separately here. To separate them you would need farms where size and fertilizer vary independently, ideally by randomising fertilizer.</p>
+<p class="small muted">The previous edition printed 18.501 + 0.117·size + 0.054·fertilizer and F = 114.25. Recomputed from the printed data, the values are [[reg['b'][0]|.3f]], [[reg['b'][1]|.3f]], [[reg['b'][2]|.4f]] and F = [[reg['F']|.2f]]. The original was probably fitted to unrounded yields.</p></div>
+<h3><span class="n">7.1</span>A warning about causal interpretation</h3>
+<p>Regression ANOVA shows whether the predictors jointly explain variation beyond an intercept-only model. It does not, by itself, show that farm size or fertilizer <em>causes</em> yield changes. Causal claims need design: random assignment, or credible control of confounding. Each coefficient answers a partial question: the expected change in yield with one predictor, <em>holding the other fixed</em>.</p>
+</section>
+
+<section class="chap p2">
+<h2><span class="num">8</span>Two-way ANOVA and interactions</h2>
+<p>With two factors, the model part of the variation can be split further: into the <b>main effect</b> of factor A, the main effect of factor B, their <b>interaction</b> A × B, and the residual. An interaction means <em>the effect of one factor depends on the level of the other</em>.</p>
+<p><b>Toy design:</b> 3 seed varieties × 3 irrigation levels × 3 replicate plots (27 plots). To keep the data fully reproducible, the three replicates in every cell are <em>cell mean − 1, cell mean, cell mean + 1</em>. So the within-cell SS is always 9 × 2 = 18 on 18 df, and MS<sub>residual</sub> = 1. We compare two scenarios with different cell means.</p>
+<table class="tight"><tr><th>Cell means</th><th class="r">Low</th><th class="r">Medium</th><th class="r">High</th><th style="width:14px;background:#fff"></th><th>Cell means</th><th class="r">Low</th><th class="r">Medium</th><th class="r">High</th></tr>
+[[''.join(f"<tr><td>V{i+1}</td>" + ''.join(f"<td class='r'>{v:g}</td>" for v in tw_add['cellmeans'][i]) + "<td style='background:#fff'></td>" + f"<td>V{i+1}</td>" + ''.join(f"<td class='r'>{v:g}</td>" for v in tw_int['cellmeans'][i]) + "</tr>" for i in range(3))]]
+<tr><td colspan="4" class="small muted">Scenario 1: no interaction</td><td style="background:#fff"></td><td colspan="4" class="small muted">Scenario 2: V3 is drought-tolerant; V2 is thirsty</td></tr></table>
+[[fig('f_interact','<b>Figure 10. Interaction plots.</b> Left: every variety gains roughly the same amount from more water, so the lines are nearly parallel (no interaction). Right: V2 responds strongly to water, V3 barely at all, and the lines cross. Asking "which variety is best?" now has no single answer: it depends on irrigation.')]]
+[[tw_both()]]
+<p>In Scenario 1 the interaction row is tiny (F = [[tw_add['rows'][2]['F']|.2f]], p = [[tw_add['rows'][2]['p']|.2f]]), and the main effects can be read directly: "V2 yields about 3.7 more than V1 on average; high irrigation adds about 5 over low". In Scenario 2 the interaction is huge (F = [[tw_int['rows'][2]['F']|.1f]]). The variety main effect of [[tw_int['rows'][0]['ss']|.1f]] averages over opposite patterns and should not be interpreted on its own: <em>always look at the interaction first</em>. Notice that the residual MS is 1.00 in both scenarios, because the noise is identical. What changes is only how the <em>model</em> variation is divided up.</p>
+
+</section>

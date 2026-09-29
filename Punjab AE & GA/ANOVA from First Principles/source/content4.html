@@ -1,0 +1,214 @@
+<!-- ============================================================ PART IV -->
+<div class="banner p4"><div class="kicker">Part IV</div><div class="title">Practice</div>
+<ul><li>assumptions</li><li>decision guide</li><li>formula sheet</li><li>R code</li><li>32 exercises</li><li>answers</li></ul></div>
+
+<section class="chap p4">
+<h2><span class="num">11</span>Assumptions, diagnostics, and a decision guide</h2>
+<table class="tight"><tr><th style="width:17%">Assumption</th><th style="width:27%">Why it matters</th><th style="width:27%">How to check</th><th>If it fails</th></tr>
+<tr><td><b>Independence</b><br><span class="chip">most important</span></td><td>Clustered, repeated or paired data make ordinary SEs too small (Part III).</td><td>Think about the design: PSUs, households, repeated visits, same interviewer.</td><td>Mixed / multilevel model, repeated-measures, cluster-robust SEs, survey design methods.</td></tr>
+<tr><td><b>Equal variances</b></td><td>The pooled MS<sub>W</sub> can hide or exaggerate differences (Example 12).</td><td>Residuals-vs-fitted funnel; compare group SDs (ratio &gt; 2 is a warning).</td><td>Welch's ANOVA (<code>oneway.test</code>); robust (HC) SEs in regression.</td></tr>
+<tr><td><b>Normality of residuals</b></td><td>Matters for small samples; ANOVA is fairly robust with balanced groups.</td><td>Q–Q plot of residuals (Fig. 8), not of the raw outcome.</td><td>Transform (log), rank-based Kruskal–Wallis, or bootstrap.</td></tr>
+<tr><td><b>Correct model</b></td><td>Residual variance is "noise" only relative to the fitted model.</td><td>Residual patterns; plot against omitted variables and time.</td><td>Add covariates, interactions, curvature.</td></tr>
+<tr><td><b>Multiplicity</b></td><td>Many pairwise tests inflate false alarms.</td><td>Count your comparisons.</td><td>Tukey HSD, planned contrasts, Holm correction.</td></tr>
+<tr><td><b>Effect size</b></td><td>p depends on sample size as much as on the effect.</td><td>Always ask "how big?"</td><td>Report mean differences with CIs, ω², partial η², R², variance components.</td></tr></table>
+
+<h3><span class="n">11.1</span>A practical decision guide</h3>
+<div class="guide">
+ <div class="h">Your question / data structure</div><div class="h">Typical model</div><div class="h">In R</div>
+ <div class="q" style="--gc:var(--tot)">One categorical factor, independent groups</div><div class="m">One-way ANOVA (linear model with a factor)</div><div><code>aov(y ~ g)</code></div>
+ <div class="q" style="--gc:var(--tot)">…and group variances clearly differ</div><div class="m">Welch's ANOVA</div><div><code>oneway.test(y ~ g)</code></div>
+ <div class="q" style="--gc:var(--tot)">Which specific groups differ?</div><div class="m">Tukey HSD / planned contrasts</div><div><code>TukeyHSD(fit)</code></div>
+ <div class="q" style="--gc:var(--noi)">Two categorical factors</div><div class="m">Two-way (factorial) ANOVA with interaction</div><div><code>aov(y ~ A * B)</code></div>
+ <div class="q" style="--gc:var(--noi)">Factor + continuous covariate</div><div class="m">ANCOVA / multiple regression</div><div><code>lm(y ~ g + x)</code></div>
+ <div class="q" style="--gc:var(--noi)">Several continuous predictors</div><div class="m">Multiple regression + ANOVA F tests</div><div><code>anova(lm0, lm1)</code></div>
+ <div class="q" style="--gc:var(--aqua)">Repeated measurements on the same unit</div><div class="m">Repeated-measures / mixed model</div><div><code>lmer(y ~ t + (1|id))</code></div>
+ <div class="q" style="--gc:var(--aqua)">People nested in villages / booths / schools</div><div class="m">Multilevel (random-intercept) model; ICC</div><div><code>lmer(y ~ 1 + (1|psu))</code></div>
+ <div class="q" style="--gc:var(--sig)">Survey estimate with weights, strata, PSUs</div><div class="m">Design-based estimator (Taylor linearisation or replicate weights)</div><div><code>svydesign()</code>, <code>svymean()</code></div>
+ <div class="q" style="--gc:var(--sig)">Skewed outcome, small groups, outliers</div><div class="m">Kruskal–Wallis or bootstrap</div><div><code>kruskal.test(y ~ g)</code></div>
+</div>
+</section>
+
+<section class="chap p4">
+<h2><span class="num">12</span>Formula sheet</h2>
+<div class="fs">
+ <div class="f" style="--c:var(--tot);--w:var(--tot-wash);--ci:var(--tot)"><div class="t">Total SS &amp; variance</div>$\SST=\sum_i (y_i-\bar y)^2,\quad s^2=\SST/(n-1)$</div>
+ <div class="f" style="--c:var(--tot);--w:var(--tot-wash);--ci:var(--tot)"><div class="t">One-way identity</div>$\SST=\SSB+\SSW$</div>
+ <div class="f" style="--c:var(--sig);--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="t">Between SS</div>$\SSB=\sum_i n_i(\bar y_i-\bar y)^2,\ \ df=k-1$</div>
+ <div class="f" style="--c:var(--noi);--w:var(--noi-wash);--ci:var(--noi-ink)"><div class="t">Within SS</div>$\SSW=\sum_i\sum_j(y_{ij}-\bar y_i)^2,\ \ df=n-k$</div>
+ <div class="f" style="--c:var(--sig);--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="t">F statistic</div>$F=\dfrac{\MSB}{\MSW}\sim F_{k-1,\,n-k}$ under $H_0$</div>
+ <div class="f" style="--c:var(--sig);--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="t">Expected mean squares</div>$E[\MSW]=\sigma^2,\ E[\MSB]=\sigma^2+\frac{\sum n_i(\mu_i-\bar\mu)^2}{k-1}$</div>
+ <div class="f" style="--c:var(--tot);--w:var(--tot-wash);--ci:var(--tot)"><div class="t">Effect sizes</div>$\eta^2=\dfrac{\SSB}{\SST},\ \ \omega^2=\dfrac{\SSB-(k-1)\MSW}{\SST+\MSW}$</div>
+ <div class="f" style="--c:var(--tot);--w:var(--tot-wash);--ci:var(--tot)"><div class="t">Regression</div>$\SST=\text{SSR}+\text{SSE},\ \ R^2=\text{SSR}/\SST$<br>$\text{VIF}_j=1/(1-R_j^2)$</div>
+ <div class="f" style="--c:var(--aqua);--w:var(--aqua-wash);--ci:var(--aqua-ink)"><div class="t">Random intercept &amp; ICC</div>$\sigma^2=\sigma_b^2+\sigma_w^2,\ \ \rho=\sigma_b^2/\sigma^2$</div>
+ <div class="f" style="--c:var(--aqua);--w:var(--aqua-wash);--ci:var(--aqua-ink)"><div class="t">ICC from ANOVA (equal m)</div>$\hat\rho=\dfrac{\MSB-\MSW}{\MSB+(m-1)\MSW}$</div>
+ <div class="f" style="--c:var(--aqua);--w:var(--aqua-wash);--ci:var(--aqua-ink)"><div class="t">Design effect</div>$\text{DEFF}=1+(m-1)\rho$<br>$\text{DEFT}=\sqrt{\text{DEFF}},\ \ n_{\text{eff}}=n/\text{DEFF}$</div>
+ <div class="f" style="--c:var(--aqua);--w:var(--aqua-wash);--ci:var(--aqua-ink)"><div class="t">Unequal clusters &amp; weights (Kish)</div>clusters: $1+\{(1+CV_m^2)\bar m-1\}\rho$<br>weights: $1+CV_w^2$</div>
+ <div class="f" style="--c:var(--sig);--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="t">Margin of error for a proportion</div>$\text{MOE}=1.96\sqrt{\text{DEFF}\cdot p(1-p)/n}$</div>
+ <div class="f" style="--c:var(--sig);--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="t">Optimal interviews per cluster</div>$m_{\text{opt}}=\sqrt{\dfrac{c_1}{c_2}\cdot\dfrac{1-\rho}{\rho}}$</div>
+</div>
+</section>
+
+<section class="chap p4">
+<h2><span class="num">13</span>Do it in R (and Python)</h2>
+<p>Everything in this chapter can be reproduced with a few lines of R. The full, tested script <code>ANOVA_companion.R</code> is saved next to this PDF; the key steps are below, with the output they produce.</p>
+<h3><span class="n">13.1</span>One-way ANOVA from first principles, then in one line</h3>
+[[R
+fert <- data.frame(
+  type  = factor(rep(c("A", "B", "C"), each = 5)),
+  yield = c(18,20,19,21,22,  23,25,24,26,25,  20,21,22,19,20))
+
+grand  <- mean(fert$yield)
+gmeans <- ave(fert$yield, fert$type)        # each row's own group mean
+SSB <- sum((gmeans - grand)^2)              # signal
+SSW <- sum((fert$yield - gmeans)^2)         # noise
+F   <- (SSB / 2) / (SSW / 12)               # 19.1
+
+fit <- aov(yield ~ type, data = fert)       # the same thing in one line
+summary(fit)
+R]]
+[[OUT
+            Df Sum Sq Mean Sq F value   Pr(>F)
+type         2  64.93   32.47    19.1 0.000187 ***
+Residuals   12  20.40    1.70
+OUT]]
+<h3><span class="n">13.2</span>After the F test: Tukey, Welch and diagnostics</h3>
+[[R
+TukeyHSD(fit)                                   # which pairs differ?
+oneway.test(hours ~ firm, data = courier)       # Welch: unequal variances
+par(mfrow = c(1, 2)); plot(fit, which = 1:2)    # residual plots
+R]]
+[[OUT
+     diff       lwr       upr     p adj
+B-A   4.6  2.400023  6.799977 0.0003272
+C-A   0.4 -1.799977  2.599977 0.8796157
+C-B  -4.2 -6.399977 -2.000023 0.0007152
+
+F = 23.907, num df = 2.0000, denom df = 6.7448, p-value = 0.0008674
+OUT]]
+<h3><span class="n">13.3</span>Regression, collinearity and the two-way model</h3>
+[[R
+m1 <- lm(yield ~ size + fert, data = farm)
+anova(lm(yield ~ 1, data = farm), m1)       # the regression F IS an ANOVA
+car::vif(m1)                                # ~123: severe collinearity
+summary(aov(yield ~ variety * irrigation, data = cells))
+R]]
+<h3><span class="n">13.4</span>ICC and design effect: by ANOVA, by mixed model, by survey design</h3>
+[[R
+tab <- summary(aov(score ~ psu, data = svy))[[1]]
+MSB <- tab$`Mean Sq`[1];  MSW <- tab$`Mean Sq`[2];  m <- 5
+icc <- (MSB - MSW) / (MSB + (m - 1) * MSW)       # 0.978
+1 + (m - 1) * icc                                 # DEFF = 4.91
+
+library(lme4)                                     # same ICC from a mixed model
+vc <- as.data.frame(VarCorr(lmer(score ~ 1 + (1 | psu), data = svy)))$vcov
+vc[1] / sum(vc)
+
+library(survey)                                   # design-based SE and DEFF
+des <- svydesign(ids = ~booth, weights = ~wt, data = pun)
+svymean(~vote_A, des, deff = "replace")
+R]]
+[[OUT
+           mean       SE   DEff
+vote_A 0.365417 0.013005 1.7498
+OUT]]
+<p class="small muted">(Simulated data for 200 booths × 12: the survey package's DEFF of ≈ 1.75 is close to the planning value 1 + 11ρ.)</p>
+<h3><span class="n">13.5</span>The same in Python</h3>
+<pre class="r"><span class="lab">PYTHON</span><span class="k">import</span> statsmodels.formula.api <span class="k">as</span> smf, statsmodels.api <span class="k">as</span> sm
+fit = smf.<span class="f">ols</span>(<span class="s">"yield_ ~ C(type)"</span>, data=fert).<span class="f">fit</span>()
+sm.stats.<span class="f">anova_lm</span>(fit)                                 <span class="c"># one-way ANOVA table</span>
+<span class="k">from</span> scipy.stats <span class="k">import</span> f_oneway, tukey_hsd
+<span class="f">f_oneway</span>(a, b, c); <span class="f">tukey_hsd</span>(a, b, c)                    <span class="c"># F test and Tukey</span>
+smf.<span class="f">mixedlm</span>(<span class="s">"score ~ 1"</span>, svy, groups=svy[<span class="s">"psu"</span>]).<span class="f">fit</span>()  <span class="c"># variance components → ICC</span></pre>
+</section>
+
+<section class="chap p4">
+<h2><span class="num">14</span>Exercises</h2>
+<p><span class="badge b1">★ warm-up</span> <span class="badge b2">★★ core</span> <span class="badge b3">★★★ stretch</span> <span class="badge bnew">NEW</span> <span class="badge bR">R</span> &nbsp;Work with pencil first, then check in R.</p>
+
+<div class="lvhead"><span class="badge b1">★</span>Warm-up: concepts and small calculations<span class="bar"></span></div>
+<ol class="ex" style="--start:0">
+<li class="lv1">In your own words, define variance. Why are deviations from the mean squared?</li>
+<li class="lv1">For the data 4, 6, 8, compute the mean, SST and sample variance.</li>
+<li class="lv1">Explain the difference between total variance and within-group variance in a one-way ANOVA.</li>
+<li class="lv1">What does the null hypothesis of a one-way ANOVA state?</li>
+<li class="lv1">Why is an F statistic near 1 broadly compatible with the null hypothesis?</li>
+<li class="lv1">Group A is 10, 12, 11 and Group B is 15, 14, 16. Compute both group means and the grand mean.</li>
+<li class="lv1">Using the data in Q6, compute SSW.</li>
+<li class="lv1">Using the data in Q6, compute SSB and verify that SST = SSB + SSW.</li>
+</ol>
+<div class="lvhead"><span class="badge b2">★★</span>Core: tables, interpretation, regression and design<span class="bar"></span></div>
+<ol class="ex" style="--start:8">
+<li class="lv2">For Q6–Q8, compute df<sub>between</sub>, df<sub>within</sub>, MS<sub>between</sub>, MS<sub>within</sub> and F.</li>
+<li class="lv2">Explain why a statistically significant ANOVA does not tell you which particular group means differ.</li>
+<li class="lv2">A study has four treatments with n = 8 per treatment. What are df<sub>between</sub>, df<sub>within</sub> and df<sub>total</sub>?</li>
+<li class="lv2">Suppose SST = 240 and SSW = 90. Compute SSB and η². Interpret η².</li>
+<li class="lv2">Suppose MS<sub>between</sub> = 30 and MS<sub>within</sub> = 5. Compute F. What is the signal-to-noise interpretation?</li>
+<li class="lv2">Give three reasons why residual variance may contain systematic structure rather than pure random noise.</li>
+<li class="lv2">Explain how randomisation and replication make the within-group variance more interpretable as noise.</li>
+<li class="lv2">In the model yield/acre ~ farm size + fertilizer, what does the overall regression F test ask?</li>
+<li class="lv2">A regression has SST = 500 and SSE = 125. Compute SSR and R². What proportion remains unexplained in-sample?</li>
+<li class="lv2">In a two-way ANOVA, distinguish a main effect from an interaction using an agricultural example.</li>
+<li class="lv2">A two-way model has a strong interaction. Why can interpreting a main effect alone be misleading?</li>
+<li class="lv2">Describe when Welch's ANOVA would be preferred to ordinary one-way ANOVA.</li>
+<li class="lv2">In a cluster survey, σ²<sub>between</sub> = 9 and σ²<sub>within</sub> = 36. Compute the total variance and the ICC.</li>
+<li class="lv2">For Q21, if m = 6 respondents per PSU, compute DEFF and n<sub>eff</sub> for a nominal n = 600.</li>
+</ol>
+<div class="lvhead"><span class="badge b3">★★★</span>Stretch: survey design and estimation<span class="bar"></span></div>
+<ol class="ex" style="--start:22">
+<li class="lv3">Two designs both sample n = 600. Design A takes 100 PSUs × 6 people; Design B takes 30 PSUs × 20 people. If ρ = 0.08, compute the equal-m DEFF for each and compare their effective sample sizes.</li>
+<li class="lv3">A one-way random-effects ANOVA of 50 clusters of size m = 4 gives MS<sub>between</sub> = 18 and MS<sub>within</sub> = 10. Estimate σ²<sub>w</sub>, σ²<sub>b</sub>, the ICC and DEFF.</li>
+<li class="lv3">A survey has unequal cluster sizes with mean m̄ = 10, CV<sub>m</sub> = 0.6 and ρ = 0.05. Use DEFF ≈ 1 + {(1 + CV²<sub>m</sub>) m̄ − 1}ρ. Then explain why a full survey-design variance estimator is still preferable.</li>
+</ol>
+<div class="lvhead"><span class="badge bnew">NEW</span>Seven new exercises: pictures, pitfalls, planning and R<span class="bar"></span></div>
+<ol class="ex" style="--start:25">
+<li class="lv1"><span class="badge b1">★</span> Look at Figure 4. The top-left and top-right panels have the <em>same</em> group means. Without calculating, explain why one F is large and the other small.</li>
+<li class="lv2"><span class="badge b2">★★</span> Battery example (§6.4): F = 0.73, p = 0.50. A manager writes "the three brands last equally long". What is wrong with this sentence, and what would you write instead?</li>
+<li class="lv2"><span class="badge b2">★★</span> Courier example (§6.5): compute the three group variances. Explain in two sentences why classical ANOVA (p = 0.38) and Welch's ANOVA (p = 0.0009) disagree.</li>
+<li class="lv2"><span class="badge b2">★★</span> From the fertilizer ANOVA table, compute ω² and compare it with η² = 0.761. Why is ω² smaller, and why does the gap shrink as n grows?</li>
+<li class="lv3"><span class="badge b3">★★★</span> Punjab lab: 2,400 interviews in 200 booths, ρ = 0.06, p = 0.35. (a) Compute DEFF, DEFT and n<sub>eff</sub>. (b) Compute the 95% MOE under SRS and under clustering. (c) If weights have CV<sub>w</sub> = 0.5, what is the approximate overall DEFF and MOE?</li>
+<li class="lv3"><span class="badge b3">★★★</span> With c<sub>1</sub> = ₹6,000 per booth, c<sub>2</sub> = ₹300 per interview and ρ = 0.06, find m<sub>opt</sub>. For a budget of ₹19,20,000, how many booths can you afford at m = 18? Compare n<sub>eff</sub> with the 200 × 12 design. Is the change worth it?</li>
+<li class="lv3"><span class="badge bR">R</span> <span class="badge b3">★★★</span> In <code>ANOVA_companion.R</code>, change the within-PSU deviations from (−2, −1, 0, 1, 2) to (−10, −5, 0, 5, 10). Predict the new MS<sub>W</sub>, σ²<sub>b</sub>, ICC, DEFF and n<sub>eff</sub> by hand, then run the script to check.</li>
+</ol>
+</section>
+
+<section class="chap p4">
+<h2><span class="num">15</span>Answer key and solution hints</h2>
+<ol class="ans" style="--start:0">
+<li>Variance is the average squared distance from the mean (with a df adjustment in a sample). Squaring avoids cancellation and emphasises larger deviations.</li>
+<li>Mean = 6; SST = (4 − 6)² + 0² + (8 − 6)² = 8; s² = 8/2 = 4.</li>
+<li>Total variance uses deviations from the grand mean. Within variance uses deviations from each group's own mean, and estimates residual scatter after group membership is fitted.</li>
+<li>All population group means are equal: μ<sub>1</sub> = μ<sub>2</sub> = … = μ<sub>k</sub>.</li>
+<li>Under H<sub>0</sub> both mean squares estimate the same σ², so their ratio fluctuates around 1.</li>
+<li>Means: A = 11, B = 15, grand mean = 13.</li>
+<li>A: 1 + 1 + 0 = 2; B: 0 + 1 + 1 = 2; SSW = 4.</li>
+<li>SSB = 3(11 − 13)² + 3(15 − 13)² = 24. SST = 28 = 24 + 4 ✓.</li>
+<li>df<sub>B</sub> = 1, df<sub>W</sub> = 4; MSB = 24; MSW = 1; F = 24.</li>
+<li>The omnibus test evaluates the joint null. Finding which pairs differ needs contrasts or post-hoc comparisons with multiplicity control (e.g. Tukey).</li>
+<li>n = 32; df<sub>B</sub> = 3; df<sub>W</sub> = 28; df<sub>T</sub> = 31.</li>
+<li>SSB = 150; η² = 150/240 = 0.625: in this sample, 62.5% of SST is associated with treatment.</li>
+<li>F = 6: the between-group variation per df is six times the error mean square, far more than noise alone would typically produce.</li>
+<li>Omitted covariates, nonlinear relationships, interactions, time trends, measurement error, latent subgroups, or dependence (clustering).</li>
+<li>Randomisation protects against systematic confounding of treatment labels; replication shows the scatter among comparably treated units.</li>
+<li>Whether the predictors, jointly, reduce the unexplained SS relative to an intercept-only model; equivalently, H<sub>0</sub>: both slopes are zero.</li>
+<li>SSR = 375; R² = 0.75; 25% of SST remains as residual in-sample.</li>
+<li>Main effect: the average effect of irrigation across all varieties. Interaction: irrigation raises yield a lot for V2 but hardly at all for V3 (Fig. 10).</li>
+<li>With a strong interaction, a main effect averages effects that differ greatly or even reverse across levels of the other factor.</li>
+<li>When group variances are materially unequal, especially with unequal group sizes. It is a reasonable default.</li>
+<li>Total variance = 45; ICC = 9/45 = 0.20.</li>
+<li>DEFF = 1 + 5(0.20) = 2.0; n<sub>eff</sub> = 600/2 = 300.</li>
+<li>A: DEFF = 1 + 5(0.08) = 1.40, n<sub>eff</sub> ≈ 429. B: DEFF = 1 + 19(0.08) = 2.52, n<sub>eff</sub> ≈ 238. More clusters with fewer people each is far more efficient.</li>
+<li>σ²<sub>w</sub> = 10; σ²<sub>b</sub> = (18 − 10)/4 = 2; ICC = 2/12 = 0.167 (check: 8/(18 + 3·10) = 8/48); DEFF = 1 + 3(0.167) = 1.50.</li>
+<li>DEFF ≈ 1 + (1.36 × 10 − 1)(0.05) = 1 + 12.6 × 0.05 = 1.63. A design-based estimator uses the actual cluster sizes, weights, strata, finite-population corrections and the specific statistic.</li>
+<li>F divides the between-group signal by within-group noise. The means (signal) are identical, but the right panel's noise is three times larger, so MS<sub>W</sub> is about 9× larger and F shrinks about 9-fold.</li>
+<li>A non-significant F is not proof of equality: with n = 5 per brand the study can only rule out differences larger than about ±[[2.179*(2*O['batt']['msw']/5)**0.5|.1f]] hours. Better: "No evidence of a difference; differences up to ~[[2.179*(2*O['batt']['msw']/5)**0.5|.1f]] h cannot be excluded."</li>
+<li>Variances: Fast [[O['courier']['vars'][0]|.1f]], Budget [[O['courier']['vars'][1]|.1f]], Local [[O['courier']['vars'][2]|.1f]]. Classical ANOVA pools them into MS<sub>W</sub> = [[O['courier']['msw']|.1f]], dominated by Budget, which drowns the tight Fast-vs-Local gap. Welch weights each group by n<sub>i</sub>/s<sub>i</sub>², so the precise groups count for more.</li>
+<li>ω² = (64.93 − 2 × 1.70)/(85.33 + 1.70) = [[O['fert']['omega']|.3f]]. η² counts the SSB that noise alone would produce (about (k − 1)·MS<sub>W</sub>); that expected amount stays fixed while SST grows with n, so the correction matters less in large samples.</li>
+<li>(a) DEFF = 1.66, DEFT = 1.29, n<sub>eff</sub> ≈ 1,446. (b) SRS: ±1.9 pts; clustered: ±1.9 × 1.29 ≈ ±2.5 pts. (c) DEFF ≈ 1.66 × 1.25 ≈ 2.08; MOE ≈ ±2.7 pts; n<sub>eff</sub> ≈ 1,157.</li>
+<li>m<sub>opt</sub> = √(20 × 15.67) ≈ 17.7. At m = 18 each booth costs ₹11,400, so you can afford 168 booths (3,024 interviews); DEFF = 2.02, n<sub>eff</sub> ≈ 1,497 vs 1,446 for 200 × 12: only about 3.5% better. Near the optimum the curve is flat, so operational factors (supervision, interviewer fatigue) can reasonably decide.</li>
+<li>Each PSU's squared deviations now sum to 250, so MS<sub>W</sub> = 8 × 250/32 = 62.5; MS<sub>B</sub> is unchanged at 570. σ²<sub>b</sub> = (570 − 62.5)/5 = 101.5; ICC = 101.5/164 = 0.619; DEFF = 1 + 4(0.619) = 3.48; n<sub>eff</sub> ≈ 11.5. More within-PSU noise means <em>less</em> clustering and more information per interview.</li>
+</ol>
+
+[[call('key','Closing perspective','bulb')]]
+<p>The most durable way to understand ANOVA is not as a special test for three or more means, but as an <b>accounting system for variation</b>. Total variation is split into components linked to specified structure plus a residual. Regression changes the form of the predictors but keeps the same decomposition. Multilevel models add explicit variance components. The survey design effect then follows naturally: a large between-cluster component creates intraclass correlation, which reduces the independent information each extra respondent in a PSU adds.</p>
+<p style="margin-bottom:0">Once this viewpoint is clear, ANOVA, regression, ICC, random effects, cluster sampling, DEFF and effective sample size become parts of <em>one</em> coherent framework rather than a set of disconnected formulas.</p></div>
+</section>

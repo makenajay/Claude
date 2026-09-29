@@ -1,0 +1,84 @@
+<!-- ============================================================ PART III -->
+<div class="banner p3"><div class="kicker">Part III</div><div class="title">Surveys: clustering, ICC and DEFF</div>
+<ul><li>random intercepts</li><li>intraclass correlation</li><li>design effect</li><li>effective sample size</li><li>margin of error</li><li>optimal cluster size</li></ul></div>
+
+<section class="chap p3">
+<h2><span class="num">9</span>Clustering, ICC and the design effect</h2>
+<p>Surveys rarely sample people independently. They sample <b>PSUs</b> (primary sampling units: villages, polling booths, census blocks, schools, households) and then interview several people inside each. People from the same PSU tend to resemble each other: they share a neighbourhood, a local candidate, the same news and the same caste mix. That resemblance means the observations are <em>not</em> independent in the way a simple random sample (SRS) of the same size would be. ANOVA is exactly the tool that measures how much they resemble each other.</p>
+
+<h3><span class="n">9.1</span>The random-intercept model</h3>
+<div class="eqbox">$$y_{ij}=\mu+\textcolor{#b8461a}{u_j}+\textcolor{#1c5cab}{e_{ij}},\qquad u_j\sim(0,\sigma_b^2),\quad e_{ij}\sim(0,\sigma_w^2)\quad\Rightarrow\quad \operatorname{Var}(y_{ij})=\textcolor{#b8461a}{\sigma_b^2}+\textcolor{#1c5cab}{\sigma_w^2}$$</div>
+<p>Here $u_j$ is cluster $j$'s shared deviation (its "local flavour") and $e_{ij}$ is person $i$'s individual deviation. The <b>intraclass correlation</b> is the share of total variance that sits <em>between</em> clusters:</p>
+<div class="eqbox">$$\rho=\frac{\sigma_b^2}{\sigma_b^2+\sigma_w^2}\qquad(\text{also the correlation between two people in the same cluster})$$</div>
+[[fig('f_iccbars','<b>Figure 11. ICC as a share of variance.</b> For many attitude items the between-cluster share is small (ρ ≈ 0.01–0.05). Vote intention by polling booth is often higher (ρ ≈ 0.05–0.15), because booths are socially homogeneous. The toy example in §9.4 is deliberately extreme.')]]
+
+<h3><span class="n">9.2</span>Estimating the ICC from a one-way random-effects ANOVA</h3>
+<p>Treat PSU as the "group" in a one-way ANOVA. With equal cluster size $m$, $E[\MSW]=\sigma_w^2$ and $E[\MSB]=\sigma_w^2+m\sigma_b^2$. Solving these gives the estimates:</p>
+<div class="eqbox">$$\hat\sigma_w^2=\MSW,\qquad \hat\sigma_b^2=\max\!\Big(0,\ \frac{\MSB-\MSW}{m}\Big),\qquad \hat\rho=\frac{\MSB-\MSW}{\MSB+(m-1)\MSW}.$$</div>
+<p class="small muted">The truncation at zero matters: when MS<sub>B</sub> &lt; MS<sub>W</sub> by chance, the raw estimate of σ²<sub>b</sub> would be negative, which is impossible for a variance.</p>
+
+<h3><span class="n">9.3</span>From ICC to the design effect: a short derivation</h3>
+<p>The mean of the $m$ people in one cluster shares the single $u_j$, so its variance is $\sigma_b^2+\sigma_w^2/m$. Rewrite that using $\sigma^2=\sigma_b^2+\sigma_w^2$ and $\rho$:</p>
+<div class="eqbox">$$\operatorname{Var}(\bar y_j)=\sigma_b^2+\frac{\sigma_w^2}{m}=\frac{\sigma^2}{m}\big[1+(m-1)\rho\big]\ \ \Rightarrow\ \ \operatorname{Var}(\bar y)=\underbrace{\frac{\sigma^2}{n}}_{\text{SRS}}\times\underbrace{\big[1+(m-1)\rho\big]}_{\textstyle \text{DEFF}}$$</div>
+<p>for $K$ independent clusters and $n=Km$. So the <b>design effect</b> is the factor by which clustering inflates the variance of the mean. The <b>effective sample size</b> is the SRS size that would give the same precision:</p>
+<div class="eqbox">$$\text{DEFF}=1+(m-1)\rho,\qquad \text{DEFT}=\sqrt{\text{DEFF}},\qquad n_{\text{eff}}=\frac{n}{\text{DEFF}}.$$</div>
+<p class="small">The formula is exact under this model (equal cluster sizes, a common ρ, clusters sampled independently). In real surveys it is an approximation. <b>DEFT</b> is what multiplies standard errors and confidence-interval widths.</p>
+[[fig('f_deff','<b>Figure 12. DEFF rises with ρ and with the number of interviews per cluster.</b> Even a modest ρ = 0.10 doubles the variance when m = 11, and nearly triples it at m = 20. Small ICCs are not harmless when clusters are large.')]]
+
+<h3><span class="n">9.4</span>Worked example: 8 PSUs × 5 respondents</h3>
+<p>A deliberately extreme toy survey (n = 40). The PSU means are 42, 47, 51, 55, 60, 64, 68 and 73, and within each PSU the five scores are mean − 2, −1, 0, +1, +2.</p>
+[[fig('f_psu','<b>Figure 13. A strongly clustered sample.</b> Inside each PSU the respondents are nearly identical (blue); the PSU means (orange) differ hugely. Most of the information in this sample is about <em>which PSU</em> someone lives in.')]]
+<div class="grid2" style="align-items:start">
+<table class="tight"><tr><th>Source</th><th class="r">SS</th><th class="r">df</th><th class="r">MS</th><th class="r">F</th></tr>
+<tr><td><span class="sw" style="background:var(--sig)"></span>Between PSUs</td><td class="r">[[psu['ssb']|,.2f]]</td><td class="r">7</td><td class="r">[[psu['msb']|.2f]]</td><td class="r">[[psu['F']|.1f]]</td></tr>
+<tr><td><span class="sw" style="background:var(--noi)"></span>Within PSUs</td><td class="r">[[psu['ssw']|.2f]]</td><td class="r">32</td><td class="r">[[psu['msw']|.2f]]</td><td></td></tr>
+<tr class="tot"><td><span class="sw" style="background:var(--tot)"></span>Total</td><td class="r">[[psu['sst']|,.2f]]</td><td class="r">39</td><td></td><td></td></tr></table>
+<div class="small">
+<p>$\hat\sigma_w^2=2.50$, $\ \hat\sigma_b^2=(570-2.5)/5=113.5$</p>
+<p>$\hat\rho=113.5/(113.5+2.5)=\mathbf{[[psu['icc']|.3f]]}$</p>
+<p>$\text{DEFF}=1+4(0.978)=\mathbf{[[psu['deff']|.2f]]}$, $\ n_{\text{eff}}=40/4.91\approx\mathbf{[[psu['neff']|.1f]]}$</p>
+</div></div>
+<p>Forty clustered interviews carry about as much information about the overall mean as eight independent ones. The maximum possible DEFF here is $m=5$, reached when ρ = 1: then each PSU is effectively one respondent repeated five times.</p>
+
+<h3><span class="n">9.5</span>Seeing it happen: a simulation</h3>
+[[fig('f_sim','<b>Figure 14. The design effect is not just a formula; you can watch it.</b> We drew 4,000 samples of n = [[sim["K"]*sim["M"]]] from a population with ρ = [[sim["rho"]]]: once as an SRS (blue), once as [[sim["K"]]] clusters × [[sim["M"]]] people (orange). Both are unbiased, centred on the truth, but the clustered estimates are much more spread out. The observed variance ratio ([[sim["ratio"]|.2f]]) matches 1 + (m − 1)ρ = [[sim["theory"]|.2f]].')]]
+
+<h3><span class="n">9.6</span>"Real" differences can still hurt precision</h3>
+<p>Between-PSU differences are genuine population heterogeneity, not measurement noise. Yet they create positive covariance among respondents who share a PSU, which inflates the sampling variance of an overall mean. DEFF does not say the between-cluster component is fake. It says each extra interview in the same PSU adds <em>less new information</em>, because part of it repeats what that PSU has already told you.</p>
+
+<h3><span class="n">9.7</span>Unequal cluster sizes, weights and stratification</h3>
+<div class="grid3">
+<div class="card" style="--cc:var(--aqua-ink)"><h4><span class="dot" style="background:var(--aqua)"></span>Unequal cluster sizes</h4>Information concentrates in a few large clusters, raising DEFF. Kish's approximation, with CV<sub>m</sub> the coefficient of variation of cluster sizes: $1+\{(1+CV_m^2)\bar m-1\}\rho$</div>
+<div class="card" style="--cc:var(--sig-ink)"><h4><span class="dot" style="background:var(--sig)"></span>Unequal weights</h4>Varying weights add variance. Kish's weighting effect is $1+CV_w^2$; a rough overall DEFF is often taken as the product of the weighting and clustering parts.</div>
+<div class="card" style="--cc:var(--noi-ink)"><h4><span class="dot" style="background:var(--noi)"></span>Stratification</h4>Usually <em>reduces</em> variance, when strata (region, urban/rural) are internally similar and differ from each other.</div>
+</div>
+<p>For a real survey, estimate the DEFF of each statistic directly as $\operatorname{Var}_{\text{design}}(\hat\theta)/\operatorname{Var}_{\text{SRS}}(\hat\theta)$, using software that knows the strata, PSUs and weights (Taylor linearisation or replicate weights; the R <code>survey</code> package does this). The DEFF is <em>statistic-specific</em>: vote share, age and turnout each have their own ρ.</p>
+</section>
+
+<section class="chap p3">
+<h2><span class="num">10</span>Survey lab: a Punjab-style pre-poll design</h2>
+[[call('survey','Scenario (illustrative numbers)','pin')]]
+<p>A pre-election survey plans <b>[[pun['n']|,]] interviews</b> in <b>[[pun['k']]] polling booths</b> (<b>m = [[pun['m']]]</b> per booth). Pilot data suggest an ICC for vote intention of about <b>ρ = [[pun['rho']]]</b>. The headline estimate is a party's vote share of about <b>[[pun['p']*100|.0f]]%</b>. Post-stratification weights have CV<sub>w</sub> ≈ [[pun['cvw']]]. <span class="muted">These inputs are for teaching, not from a real survey.</span></p></div>
+<h3><span class="n">10.1</span>What does clustering cost us?</h3>
+<div class="grid4">
+ <div class="tile" style="--w:var(--tot-wash);--ci:var(--tot)"><div class="v">[[pun['deff']|.2f]]</div><div class="l">DEFF from clustering = 1 + (12 − 1) × 0.06</div></div>
+ <div class="tile" style="--w:var(--tot-wash);--ci:var(--tot)"><div class="v">[[pun['deft']|.2f]]</div><div class="l">DEFT: standard errors are [[(pun['deft']-1)*100|.0f]]% wider than under SRS</div></div>
+ <div class="tile" style="--w:var(--aqua-wash);--ci:var(--aqua-ink)"><div class="v">[[pun['neff']|,.0f]]</div><div class="l">Effective sample size (of [[pun['n']|,]] interviews)</div></div>
+ <div class="tile" style="--w:var(--sig-wash);--ci:var(--sig-ink)"><div class="v">≈ [[pun['deff_tot']|.2f]]</div><div class="l">DEFF with weights too ≈ 1.66 × 1.25 → n<sub>eff</sub> ≈ [[pun['neff_tot']|,.0f]]</div></div>
+</div>
+<table class="tight"><tr><th>Assumed design</th><th class="r">Standard error</th><th class="r">95% margin of error</th><th class="r">95% interval for 35%</th></tr>
+<tr><td>Simple random sample of 2,400</td><td class="r">[[pun['se_srs']*100|.2f]] pts</td><td class="r">± [[pun['moe_srs']*100|.1f]] pts</td><td class="r">[[35-pun['moe_srs']*100|.1f]]% – [[35+pun['moe_srs']*100|.1f]]%</td></tr>
+<tr><td>200 booths × 12 (clustering)</td><td class="r">[[pun['se_srs']*pun['deft']*100|.2f]] pts</td><td class="r">± [[pun['moe_cl']*100|.1f]] pts</td><td class="r">[[35-pun['moe_cl']*100|.1f]]% – [[35+pun['moe_cl']*100|.1f]]%</td></tr>
+<tr class="hl"><td>Clustering + unequal weights</td><td class="r">[[pun['moe_tot']/1.96*100|.2f]] pts</td><td class="r">± [[pun['moe_tot']*100|.1f]] pts</td><td class="r">[[35-pun['moe_tot']*100|.1f]]% – [[35+pun['moe_tot']*100|.1f]]%</td></tr></table>
+[[call('warn','Reporting "± 2%" for a clustered survey understates the uncertainty','alert')]]
+<p>The SRS formula $1.96\sqrt{p(1-p)/n}$ gives ± 1.9 points here, but the honest design-based margin is closer to ± 2.7. The difference matters when two parties are separated by 3–4 points. Always multiply by DEFT, or better, let survey software compute the standard error from the actual design.</p></div>
+
+<h3><span class="n">10.2</span>How many interviews per booth? The cost–precision trade-off</h3>
+<p>Opening a booth (travel, permissions, supervisor time) costs $c_1$; each extra interview there costs $c_2$. For a fixed budget, the variance of the mean is minimised by the classic result:</p>
+<div class="eqbox">$$m_{\text{opt}}=\sqrt{\frac{c_1}{c_2}\cdot\frac{1-\rho}{\rho}}=\sqrt{\frac{6000}{300}\cdot\frac{0.94}{0.06}}\approx\mathbf{[[cost['mopt']|.0f]]}\ \text{interviews per booth}.$$</div>
+[[fig('f_cost','<b>Figure 15. For a fixed budget, variance is U-shaped in m.</b> Too few interviews per booth wastes money on travel; too many wastes interviews on people who resemble each other. The higher the ICC, the smaller the best m. Note how flat each curve is near its minimum: for ρ = 0.06, any m from about 11 to 25 is within 6% of the best possible variance.')]]
+<p>Holding the budget at ₹[[BUDGET|,]] (the cost of the planned 200 × 12 design), here is what other choices of m would buy:</p>
+[[design_rows()]]
+[[call('key','Practical lesson','bulb')]]
+<p>When ρ &gt; 0, <b>more PSUs with fewer respondents each</b> is usually more efficient than a few PSUs sampled deeply, up to the point where field costs bite. Near the optimum the gains are small (here only a few percent over m = 12). Far from it, for example 50 interviews in each of 91 booths, the loss is large.</p></div>
+</section>

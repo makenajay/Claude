@@ -1,0 +1,142 @@
+<!-- ============================================================ FRONT MATTER -->
+<section class="p1">
+<h2 style="margin-top:0">How to use this chapter</h2>
+<p>This chapter treats ANOVA not as "a test for three or more means" but as an <strong>accounting system for variation</strong>. Every idea (the F test, regression, interactions, the intraclass correlation and the survey design effect) comes from the same single identity: <em>total variation = variation we can attribute to structure + variation we cannot</em>.</p>
+
+<div class="legendrow" style="margin:.6em 0 .9em"><span class="chip">Colour code used everywhere</span>
+<span><i style="background:var(--tot)"></i><b class="tot">Total</b> variation (SST)</span>
+<span><i style="background:var(--sig)"></i><b class="sig">Signal</b>: between groups (SSB)</span>
+<span><i style="background:var(--noi)"></i><b class="noi">Noise</b>: within groups (SSW)</span></div>
+
+<div class="toc">
+ <div class="grp p1" style="--w:var(--tot-wash)"><div class="gt">PART I · FOUNDATIONS</div><ol>
+  <li><span>1</span>Why ANOVA exists</li><li><span>2</span>Variance from first principles</li><li><span>3</span>The ANOVA decomposition</li><li><span>4</span>The F statistic and hypothesis test</li><li><span>5</span>What is signal and what is noise?</li></ol></div>
+ <div class="grp p2" style="--w:var(--noi-wash)"><div class="gt">PART II · APPLICATIONS</div><ol>
+  <li><span>6</span>Twelve one-way applications, and what comes after F</li><li><span>7</span>ANOVA inside regression: farm yield</li><li><span>8</span>Two-way ANOVA and interactions</li></ol></div>
+ <div class="grp p3" style="--w:var(--aqua-wash)"><div class="gt">PART III · SURVEYS</div><ol>
+  <li><span>9</span>Clustering, ICC and the design effect (DEFF)</li><li><span>10</span>Survey lab: a Punjab-style pre-poll design</li></ol></div>
+ <div class="grp p4" style="--w:var(--sig-wash)"><div class="gt">PART IV · PRACTICE</div><ol>
+  <li><span>11</span>Assumptions, diagnostics, and a decision guide</li><li><span>12</span>Formula sheet</li><li><span>13</span>Do it in R (and Python)</li><li><span>14</span>Exercises: 32 questions, easy → hard</li><li><span>15</span>Answer key</li></ol></div>
+</div>
+
+<h3>By the end you should be able to…</h3>
+<div class="grid3">
+ <div class="card" style="--cc:var(--tot)"><h4><span class="dot"></span>Decompose</h4>Split any outcome's variation into between-group and within-group parts, by hand and in R.</div>
+ <div class="card" style="--cc:var(--sig-ink)"><h4><span class="dot" style="background:var(--sig)"></span>Test &amp; size</h4>Run and read an F test, then report <em>how big</em> the effect is (η², ω², Tukey intervals).</div>
+ <div class="card" style="--cc:var(--noi-ink)"><h4><span class="dot" style="background:var(--noi)"></span>Diagnose</h4>Check independence, equal spread and normality; switch to Welch or mixed models when needed.</div>
+ <div class="card" style="--cc:var(--noi-ink)"><h4><span class="dot" style="background:var(--noi)"></span>Connect</h4>See regression, two-way ANOVA and random effects as the same decomposition.</div>
+ <div class="card" style="--cc:var(--aqua-ink)"><h4><span class="dot" style="background:var(--aqua)"></span>Plan surveys</h4>Turn an ICC into a DEFF, an effective sample size and an honest margin of error.</div>
+ <div class="card" style="--cc:var(--sig-ink)"><h4><span class="dot" style="background:var(--sig)"></span>Optimise</h4>Choose how many interviews per polling booth give the most precision for a fixed budget.</div>
+</div>
+
+[[call('fixbox','What is new in this edition','fix')]]
+<ul class="tight small">
+ <li><b>New figures:</b> variance drawn as squares; one observation split into three deviations; the F distribution; a 2 × 2 "signal vs noise" panel; a gallery of all twelve examples; Tukey intervals; residual diagnostics; interaction plots; a simulation of SRS vs cluster sampling; the cost-optimal cluster size.</li>
+ <li><b>Two new "reality-check" examples:</b> a genuine <em>null</em> result (F ≈ 0.7), and an unequal-variance case where classical ANOVA and Welch's ANOVA disagree sharply.</li>
+ <li><b>Statistical corrections:</b> the farm regression's predictors are almost perfectly collinear (r = [[reg['r']|.3f]], VIF ≈ [[reg['vif']|.0f]]), so neither slope is individually significant; this is now explained. Its coefficients and F are recomputed from the printed data. The two-way example now shows <em>all</em> of its data so it can be reproduced. The design-effect formula is described as exact only under its model. ω² is added because η² overstates effects in small samples.</li>
+ <li><b>New material:</b> a proof that the cross-product vanishes; what F's numerator estimates; post-hoc tests; DEFT and margins of error; a Punjab-style worked survey design; the optimal number of interviews per booth; a tested R companion script; 7 new exercises (26–32).</li>
+</ul></div>
+</section>
+
+<!-- ============================================================ PART I -->
+<div class="banner p1"><div class="kicker">Part I</div><div class="title">Foundations</div>
+<ul><li>variance</li><li>sums of squares</li><li>degrees of freedom</li><li>the F ratio</li><li>signal vs noise</li></ul></div>
+
+<section class="chap p1">
+<h2><span class="num">1</span>Why ANOVA exists</h2>
+<p>Suppose you observe different outcomes across people, farms, schools, machines, constituencies, hospitals, or survey clusters. The interesting question is never simply <em>whether</em> observations differ (they always do). The useful question is:</p>
+<p class="center" style="font-size:11.5pt;font-style:italic;margin:.6em 1.5em .9em">How much of the observed variation lines up with some systematic structure, and how much is left over?</p>
+<p>Analysis of variance (ANOVA) answers by splitting a total sum of squared deviations into pieces. In the simplest case it compares how far apart the <span class="sig">group means</span> are with how scattered the <span class="noi">observations inside each group</span> are. If the means are far apart <em>relative to</em> the scatter inside groups, the grouping variable carries information about the outcome.</p>
+
+<div class="flow">
+ <div class="box" style="background:var(--tot)"><b>Total variation</b>How much do all observations spread around the grand mean?</div>
+ <div class="op">=</div>
+ <div class="box" style="background:var(--sig)"><b>Explained (signal)</b>Spread that lines up with groups, predictors or clusters</div>
+ <div class="op">+</div>
+ <div class="box" style="background:var(--noi)"><b>Residual (noise)</b>Spread left over within groups, around the fitted model</div>
+</div>
+
+<p>The same algebra underlies ordinary least-squares regression: a categorical factor is just a set of 0/1 indicator variables. Multiple regression, factorial ANOVA, ANCOVA, mixed models and multilevel survey models are all extensions of this one principle, and Part III shows that the survey <strong>design effect</strong> comes from it too.</p>
+
+<h2><span class="num">2</span>Variance from first principles</h2>
+<h3><span class="n">2.1</span>Why deviations must be squared</h3>
+<p>For observations $y_1,\dots,y_n$ with mean $\bar y$, the raw deviations $y_i-\bar y$ always add to exactly zero: the positives cancel the negatives. Squaring them stops the cancelling and gives extra weight to large departures. The resulting total is the <b class="tot">total sum of squares</b>:</p>
+<div class="eqbox">$$\SST=\sum_{i=1}^{n}(y_i-\bar y)^2,\qquad s^2=\frac{\SST}{n-1}.$$</div>
+<p>You can take "squared deviation" literally: each one is the <em>area of a square</em> whose side is the distance from the mean.</p>
+[[fig('f_squares','<b>Figure 1. Variance is literally an average area.</b> Five values (4, 7, 8, 11, 15) with mean 9. Top: each value’s deviation from the mean (blue below, orange above). Bottom: each deviation turned into a square whose side is that distance, so its area is the squared deviation. Points far from the mean (15) contribute far more than points near it (8).')]]
+
+<h3><span class="n">2.2</span>A tiny example</h3>
+<div class="grid2" style="align-items:start">
+<table class="tight"><tr><th class="r">y</th><th class="r">y − ȳ</th><th class="r">(y − ȳ)²</th></tr>
+<tr><td class="r">8</td><td class="r">−2</td><td class="r">4</td></tr><tr><td class="r">10</td><td class="r">0</td><td class="r">0</td></tr><tr><td class="r">12</td><td class="r">+2</td><td class="r">4</td></tr>
+<tr class="tot"><td class="r">ȳ = 10</td><td class="r">sum = 0</td><td class="r">SST = 8</td></tr></table>
+<div><p>The mean is 10, SST = 8, so the sample variance is $8/(3-1)=4$ and the standard deviation is 2.</p>
+<p class="small muted">Notice the middle column sums to zero; this is always true, and it is exactly why we square.</p></div>
+</div>
+<h3><span class="n">2.3</span>Why divide by n − 1?</h3>
+<p>Once $\bar y$ has been computed from the data, only $n-1$ of the deviations are free to vary: the last one is forced so that they all sum to zero. These free pieces are the <b>degrees of freedom</b>. Dividing by $n-1$ rather than $n$ makes $s^2$ an unbiased estimate of the population variance $\sigma^2$. The same bookkeeping, "sum of squares ÷ its degrees of freedom", produces every <em>mean square</em> in ANOVA.</p>
+
+<h2><span class="num">3</span>The ANOVA decomposition</h2>
+<p>Let $y_{ij}$ be observation $j$ in group $i$ ($i=1,\dots,k$; group $i$ has $n_i$ units; $n=\sum n_i$). Write $\bar y_i$ for the group mean and $\bar y$ for the grand mean. Add and subtract the group mean:</p>
+<div class="eqbox">$$\underbrace{y_{ij}-\bar y}_{\color{#4a3aa7}\text{total}}\;=\;\underbrace{(\bar y_i-\bar y)}_{\color{#b8461a}\text{between}}\;+\;\underbrace{(y_{ij}-\bar y_i)}_{\color{#1c5cab}\text{within}}$$</div>
+[[fig('f_decomp','<b>Figure 2. The decomposition, for one farm.</b> The highlighted plot under Fertilizer B yielded 26 q/acre. It sits +4.33 above the grand mean (violet). That total splits into +2.93 because fertilizer B does better than average (orange, between) and +1.40 because this plot beat its own group mean (blue, within). Every one of the 15 points can be split the same way.')]]
+<p>Square both sides and sum over every observation. The cross-product term disappears, leaving the <strong>fundamental identity</strong>:</p>
+<div class="eqbox">$$\SST \;=\; \SSB \;+\; \SSW,\qquad \SSB=\sum_{i} n_i(\bar y_i-\bar y)^2,\quad \SSW=\sum_i\sum_j (y_{ij}-\bar y_i)^2.$$</div>
+[[call('proof','Why the cross-product vanishes (the step most books skip)','proof')]]
+<p class="small">Expanding the square gives $\SST=\SSB+\SSW+2\sum_i\sum_j(\bar y_i-\bar y)(y_{ij}-\bar y_i)$. For a fixed group $i$, the factor $(\bar y_i-\bar y)$ is a constant, so it comes out of the inner sum: $2\sum_i(\bar y_i-\bar y)\,\big[\sum_j (y_{ij}-\bar y_i)\big]$. The bracket is the sum of deviations of group $i$ from <em>its own</em> mean, which is always zero (Section 2.1). So the whole cross term is zero, for any data. ∎</p></div>
+
+<h3><span class="n">3.1</span>Degrees of freedom and mean squares</h3>
+<table class="tight"><tr><th>Piece</th><th>Sum of squares</th><th>Degrees of freedom</th><th>Mean square</th><th>Why that df?</th></tr>
+<tr><td><span class="sw" style="background:var(--sig)"></span>Between</td><td>SSB</td><td>k − 1</td><td>MSB = SSB/(k − 1)</td><td>k group means, minus 1 for the grand mean</td></tr>
+<tr><td><span class="sw" style="background:var(--noi)"></span>Within</td><td>SSW</td><td>n − k</td><td>MSW = SSW/(n − k)</td><td>n observations, minus 1 per group mean</td></tr>
+<tr class="tot"><td><span class="sw" style="background:var(--tot)"></span>Total</td><td>SST</td><td>n − 1</td><td>s² = SST/(n − 1)</td><td>the df add up too: (k − 1) + (n − k)</td></tr></table>
+<p>$\text{MS}_W$ is especially important: under the classical model it estimates the common error variance $\sigma^2$, the "background scatter" left once each group is allowed its own mean.</p>
+
+<h3><span class="n">3.2</span>Worked by hand: fertilizer and wheat yield</h3>
+<p>Fifteen plots, three fertilizers, five plots each (yield in quintals per acre).</p>
+<div class="grid2" style="align-items:start">
+<table class="tight"><tr><th>Group</th><th>Observations</th><th class="r">Mean</th><th class="r">Var</th></tr>
+<tr><td>A</td><td>18, 20, 19, 21, 22</td><td class="r">20.00</td><td class="r">2.50</td></tr>
+<tr><td>B</td><td>23, 25, 24, 26, 25</td><td class="r">24.60</td><td class="r">1.30</td></tr>
+<tr><td>C</td><td>20, 21, 22, 19, 20</td><td class="r">20.40</td><td class="r">1.30</td></tr>
+<tr class="tot"><td>All</td><td>n = 15</td><td class="r">[[O['fert']['gm']|.2f]]</td><td class="r">[[O['fert']['totvar']|.2f]]</td></tr></table>
+<div class="small">
+<p><b class="sig">SSB</b> $=5[(20-21.67)^2+(24.6-21.67)^2+(20.4-21.67)^2]$ $=5(2.78+8.60+1.60)=\mathbf{64.93}$</p>
+<p><b class="noi">SSW</b> $=4(2.5)+4(1.3)+4(1.3)=\mathbf{20.40}$ <span class="muted">(each group: (n<sub>i</sub> − 1) × its variance)</span></p>
+<p><b class="tot">SST</b> $=64.93+20.40=\mathbf{85.33}$ ✓ (check: 14 × 6.10)</p>
+</div></div>
+[[anova_table('fert')]]
+
+<h2><span class="num">4</span>The F statistic and the hypothesis test</h2>
+<p>The one-way null hypothesis is $H_0:\mu_1=\mu_2=\dots=\mu_k$; the alternative is that at least one population mean differs. The test statistic is a ratio of mean squares:</p>
+<div class="eqbox">$$F=\frac{\MSB}{\MSW}=\frac{\SSB/(k-1)}{\SSW/(n-k)}\;\sim\;F_{k-1,\;n-k}\ \text{ under } H_0.$$</div>
+<p><b>Why should F be near 1 when H<sub>0</sub> is true?</b> Look at what each mean square estimates on average:</p>
+<div class="eq">$$E[\MSW]=\sigma^2,\qquad E[\MSB]=\sigma^2+\frac{\sum_i n_i(\mu_i-\bar\mu)^2}{k-1}.$$</div>
+<p>When all $\mu_i$ are equal the extra term is zero, so numerator and denominator estimate the same $\sigma^2$ and their ratio hovers around 1. Real differences between means inflate only the numerator, pushing F upward. <em>F is therefore literally (noise + signal) ÷ noise.</em></p>
+[[fig('f_fdist','<b>Figure 3. The reference distribution.</b> If all three fertilizers were equally good, F would follow the F(2, 12) curve: usually near 1, and above [[O["fert"]["Fcrit"]|.2f]] only 5% of the time (orange). The observed F = [[O["fert"]["F"]|.1f]] is far beyond that, so data like these would be very surprising under H₀.')]]
+<p>The <b>p-value</b> is the probability, assuming $H_0$ and the model's assumptions, of an F at least as large as the one observed. For the fertilizer data $p=[[O['fert']['p']|.5f]]$.</p>
+[[call('warn','Common mistakes with p-values','alert')]]
+<ul><li>A small p says the means are <em>not all equal</em>. It does not say <em>which</em> differ (Section 6.3) or <em>by how much</em> (Section 6.2).</li>
+<li>A large p is <em>not</em> proof that the means are equal; it may just mean the study was too small or too noisy (Example 11).</li>
+<li>p is not the probability that H<sub>0</sub> is true.</li></ul></div>
+
+<h2><span class="num">5</span>What is signal and what is noise?</h2>
+<p>This is the conceptual heart of ANOVA. In a statistical model, <b class="sig">signal</b> means variation represented by the factors or predictors you specified. <b class="noi">Noise</b> means the residual variation left after fitting them. But "residual" does not automatically mean "meaningless randomness". It can contain measurement error, genuine individual differences, omitted predictors, curvature, interactions, time trends, and pure chance.</p>
+[[fig('f_signalnoise','<b>Figure 4. F compares the gaps between means (signal) with the scatter inside groups (noise).</b> All four panels use the same shapes of scatter. Moving right triples the within-group spread; moving down shrinks the gaps between means. The top-right panel has <em>the same means</em> as the top-left, yet F collapses ninefold because the noise has tripled. And the top-right and bottom-left panels have <em>identical</em> F: what matters is the ratio of gap to spread, not either one alone.')]]
+<h3><span class="n">5.1</span>How ANOVA estimates noise</h3>
+<p>Units that receive the same treatment give a natural estimate of background variability: their differences from their own group mean <em>cannot</em> be explained by the group factor. So SSW and MS<sub>W</sub> estimate the error variance, provided the model is correct and within-group observations are independent with similar variance.</p>
+<h3><span class="n">5.2</span>We cannot label an individual residual as "noise"</h3>
+<p>No calculation can look at one residual and certify that it is noise. The separation is statistical and depends on the model. Confidence that the residual variance really is noise comes from good <em>design</em> and <em>checking</em>:</p>
+<div class="grid4">
+ <div class="card" style="--cc:var(--tot)"><h4><span class="dot" style="background:var(--tot)"></span>Replication</h4>Repeated comparable units measure background scatter.</div>
+ <div class="card" style="--cc:var(--tot)"><h4><span class="dot" style="background:var(--tot)"></span>Randomisation</h4>Breaks links between treatment and hidden causes.</div>
+ <div class="card" style="--cc:var(--noi-ink)"><h4><span class="dot" style="background:var(--noi)"></span>Blocking</h4>Moves predictable variation (field, day, district) out of the residual.</div>
+ <div class="card" style="--cc:var(--noi-ink)"><h4><span class="dot" style="background:var(--noi)"></span>Multilevel models</h4>Separate person, household, village and PSU variance.</div>
+ <div class="card" style="--cc:var(--aqua-ink)"><h4><span class="dot" style="background:var(--aqua)"></span>Residual plots</h4>Reveal trends, funnels, outliers or curvature left behind.</div>
+ <div class="card" style="--cc:var(--aqua-ink)"><h4><span class="dot" style="background:var(--aqua)"></span>Validation</h4>Does the signal predict <em>new</em> data, or just this sample?</div>
+ <div class="card" style="--cc:var(--sig-ink)"><h4><span class="dot" style="background:var(--sig)"></span>Reliability data</h4>Repeat measurements show how much is instrument noise.</div>
+ <div class="card" style="--cc:var(--sig-ink)"><h4><span class="dot" style="background:var(--sig)"></span>Intervals &amp; power</h4>Show how precisely the signal is pinned down.</div>
+</div>
+[[call('think','Pause and think','q')]]
+<p>In a pre-election survey, respondents' vote intentions differ within a single polling booth. List three things, other than "randomness", that could be hiding in that within-booth variation. <span class="muted">(Ideas: age, caste or community, gender, household, interviewer, time of day.)</span></p></div>
+</section>
